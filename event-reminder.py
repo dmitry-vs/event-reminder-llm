@@ -4,7 +4,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.tools import tool
 from datetime import datetime
 from typing_extensions import TypedDict
-from models import ollama, groq, deepseek, gigachat_pro, gigachat
+from models import grok, gpt_oss, groq, deepseek, gigachat_pro, gigachat
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
@@ -69,7 +69,7 @@ def send_telegram_message(message: str) -> str:
         return f"Error sending message: {str(e)}"
 
 # Setup LLM
-llm = ollama
+llm = grok
 
 # Setup tools
 tools = [get_current_date, send_telegram_message]
@@ -118,11 +118,10 @@ user_prompt = f"""
 Проанализируй XML документ:\n\n{xml_text}\n\n.
 
 В нем описаны события. 
-Каждое событие представлено в виде элемента <event>.
-Элемент <event> содержит следующие атрибуты:
-- name - название события
-- date - дата события
-- person - имя или название группы
+Каждое событие содержит следующие параметры:
+- дата
+- имя
+- название
 
 При анализе даты события учитывай только месяц и день, не учитывай год.
 

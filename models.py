@@ -7,11 +7,18 @@ import os
 
 load_dotenv()
 
-ollama = ChatOllama(model="gpt-oss:120b-cloud", temperature=0)
+gpt_oss = ChatOllama(model="gpt-oss:120b-cloud", temperature=0)
+
+grok = ChatOpenAI(
+    base_url="https://openrouter.ai/api/v1",
+    api_key=os.getenv("OPENROUTER_GPT_OSS_KEY"),
+    model="x-ai/grok-4-fast:free",
+    temperature=0,
+)
 
 deepseek = ChatOpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
+    api_key=os.getenv("OPENROUTER_DEEPSEEK_KEY"),
     model="deepseek/deepseek-chat-v3.1:free",
     temperature=0,
 )
