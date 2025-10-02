@@ -8,7 +8,6 @@ from models import grok, gpt_oss, groq, deepseek, gigachat_pro, gigachat
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
-from lxml import etree
 import requests
 import os
 import argparse
@@ -17,11 +16,15 @@ load_dotenv()
 
 # Parse command line arguments
 def parse_args():
-    parser = argparse.ArgumentParser(description='Event Reminder Bot')
+    parser = argparse.ArgumentParser(description='Event Reminder LLM')
     parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output for debugging')
+    parser.add_argument('-d', '--days', type=int, default=7, help='Number of days to look ahead for events (default: 7)')
     return parser.parse_args()
 
 args = parse_args()
+
+# Get number of days from command line arguments (default: 7)
+days = args.days
 
 # Enable debug mode if verbose flag is set
 if (args.verbose):
@@ -104,15 +107,13 @@ if (args.verbose):
 
 # Prepare data
 xml_file = "test-events.xml"
-tree = etree.parse(xml_file)
-xml_text = etree.tostring(tree, pretty_print=True, encoding="unicode")
+with open(xml_file, 'r', encoding='utf-8') as f:
+    xml_text = f.read()
 
 # Prepare prompts and initial state
 system_prompt = """
 Ты эксперт в анализе XML документов.
 """
-
-days = 7
 
 user_prompt = f"""
 Проанализируй XML документ:\n\n{xml_text}\n\n.
