@@ -4,8 +4,7 @@ from langgraph.graph.message import add_messages
 from langchain_core.tools import tool
 from datetime import datetime
 from typing_extensions import TypedDict
-from langchain_gigachat import GigaChat
-from langchain_ollama import ChatOllama
+from models import ollama
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
@@ -37,7 +36,6 @@ def send_telegram_message(message: str) -> str:
         Сообщение об успешной отправке или ошибке
     """
     
-    print(f"Sending message to Telegram: {message}")
     bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
 
@@ -59,15 +57,7 @@ def send_telegram_message(message: str) -> str:
         return f"Error sending message: {str(e)}"
 
 # Setup LLM
-# llm = GigaChat(
-#     credentials=os.getenv("GIGACHAT_CREDENTIALS"),
-#     verify_ssl_certs=False,
-#     scope="GIGACHAT_API_PERS",
-#     model="GigaChat-Pro",
-#     temperature=0,
-# )
-
-llm = ChatOllama(model="gpt-oss:120b-cloud", temperature=0)
+llm = ollama
 
 # Setup tools
 tools = [get_current_date, send_telegram_message]
