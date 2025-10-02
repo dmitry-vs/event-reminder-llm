@@ -18,10 +18,18 @@ deepseek = ChatOpenAI(
 
 groq = ChatGroq(model_name="llama-3.1-8b-instant", temperature=0)
 
-gigachat = GigaChat(
+gigachat_pro = GigaChat(
     credentials=os.getenv("GIGACHAT_CREDENTIALS"),
     verify_ssl_certs=False,
     scope="GIGACHAT_API_PERS",
     model="GigaChat-Pro",
+    temperature=0,
+)
+
+gigachat = GigaChat(
+    credentials=os.getenv("GIGACHAT_CREDENTIALS"),
+    verify_ssl_certs=False,
+    scope="GIGACHAT_API_PERS",
+    model="GigaChat-2",
     temperature=0,
 )

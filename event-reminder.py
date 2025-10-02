@@ -4,16 +4,28 @@ from langgraph.graph.message import add_messages
 from langchain_core.tools import tool
 from datetime import datetime
 from typing_extensions import TypedDict
-from models import ollama
+from models import ollama, groq, deepseek, gigachat_pro, gigachat
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
 from lxml import etree
 import requests
 import os
+import argparse
 
 load_dotenv()
-# set_debug(True)
+
+# Parse command line arguments
+def parse_args():
+    parser = argparse.ArgumentParser(description='Event Reminder Bot')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Enable verbose output for debugging')
+    return parser.parse_args()
+
+args = parse_args()
+
+# Enable debug mode if verbose flag is set
+if (args.verbose):
+    set_debug(True)
 
 class State(TypedDict):
     messages: Annotated[list, add_messages]
@@ -86,8 +98,9 @@ graph_builder.add_edge(START, "chatbot")
 # Compile the graph
 graph = graph_builder.compile()
 
-# Print the graph in ASCII (optional)
-# print(graph.get_graph().draw_ascii())
+# Print the graph in ASCII if verbose flag is set
+if (args.verbose):
+    print(graph.get_graph().draw_ascii())
 
 # Prepare data
 xml_file = "test-events.xml"
@@ -113,6 +126,8 @@ user_prompt = f"""
 
 При анализе даты события учитывай только месяц и день, не учитывай год.
 
+Сначала получи текущую дату с помощью доступного инструмента, чтобы определить дни попадают в предстоящие {days} дней.
+
 Сформируй список событий на предстоящие {days} дней.
 Не добавляй события, выходящие за пределы предстоящих {days} дней.
 
@@ -131,7 +146,7 @@ user_prompt = f"""
 Результатом должен быть список событий в виде строки.
 Если событий нет, результатом должна быть пустая строка.
 
-Если результат не пустой, то отправь его в чат в Telegram.
+Если результат не пустой, то отправь его в чат в Telegram с помощью доступного инструмента.
 
 В итоге верни результат в виде строки.
 """
@@ -144,6 +159,6 @@ initial_state = {
 }
 
 # Run the agent
-response = graph.invoke(initial_state)
+response = graph.invoke(initial_state, config={"recursion_limit": 10})
 
 print(response["messages"][-1].content)
