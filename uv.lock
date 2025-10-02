@@ -486,6 +486,7 @@ dependencies = [
     { name = "langchain-ollama" },
     { name = "langgraph" },
     { name = "lxml" },
+    { name = "requests" },
 ]
 
 [package.metadata]
@@ -497,6 +498,7 @@ requires-dist = [
     { name = "langchain-ollama", specifier = ">=0.3.9" },
     { name = "langgraph", specifier = ">=0.6.8" },
     { name = "lxml", specifier = ">=6.0.2" },
+    { name = "requests", specifier = ">=2.32.5" },
 ]
 
 [[package]]

@@ -10,6 +10,7 @@ from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
 from lxml import etree
+import requests
 import os
 
 load_dotenv()
@@ -21,8 +22,41 @@ class State(TypedDict):
 # Define a tool for current date
 @tool
 def get_current_date() -> str:
-    """Returns today's current date in YYYY-MM-DD format."""
+    """Возвращает сегодняшнюю дату в формате YYYY-MM-DD."""
     return datetime.now().strftime("%Y-%m-%d")
+
+# Define a tool for sending Telegram messages
+@tool
+def send_telegram_message(message: str) -> str:
+    """Отправляет сообщение в Telegram чат.
+    
+    Параметры:
+        message: Текст сообщения для отправки
+        
+    Возвращает:
+        Сообщение об успешной отправке или ошибке
+    """
+    
+    print(f"Sending message to Telegram: {message}")
+    bot_token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+
+    if not bot_token:
+        return "Error: TELEGRAM_BOT_TOKEN environment variable not set"
+    if not chat_id:
+        return "Error: TELEGRAM_CHAT_ID environment variable not set"
+    
+    try:
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        data = {
+            "chat_id": chat_id,
+            "text": message
+        }
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+        return f"Message sent successfully to chat {chat_id}"        
+    except Exception as e:
+        return f"Error sending message: {str(e)}"
 
 # Setup LLM
 # llm = GigaChat(
@@ -36,7 +70,7 @@ def get_current_date() -> str:
 llm = ChatOllama(model="gpt-oss:120b-cloud", temperature=0)
 
 # Setup tools
-tools = [get_current_date]
+tools = [get_current_date, send_telegram_message]
 llm_with_tools = llm.bind_tools(tools)
 
 def chatbot(state: State):
@@ -89,8 +123,8 @@ user_prompt = f"""
 
 При анализе даты события учитывай только месяц и день, не учитывай год.
 
-Выведи список событий на предстоящие {days} дней.
-Не выводи события, выходящие за пределы предстоящих {days} дней.
+Сформируй список событий на предстоящие {days} дней.
+Не добавляй события, выходящие за пределы предстоящих {days} дней.
 
 Событие должно быть строго в формате: <дата> # <имя> # <название>
 
@@ -102,9 +136,14 @@ user_prompt = f"""
 
 Отсортируй события по дате (сначала ближайшие).
 
-Не выводи других комментариев, кроме списка событий.
+Не добавляй других комментариев, кроме списка событий.
 
-Если событий нет, то не выводи ничего (верни пустую строку).
+Результатом должен быть список событий в виде строки.
+Если событий нет, результатом должна быть пустая строка.
+
+Если результат не пустой, то отправь его в чат в Telegram.
+
+В итоге верни результат в виде строки.
 """
 
 initial_state = {
