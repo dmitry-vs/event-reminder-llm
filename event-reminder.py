@@ -1,4 +1,3 @@
-import grp
 from typing import Annotated
 from dotenv import load_dotenv
 from langgraph.graph.message import add_messages
@@ -6,9 +5,11 @@ from langchain_core.tools import tool
 from datetime import datetime
 from typing_extensions import TypedDict
 from langchain_gigachat import GigaChat
+from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, START
 from langgraph.prebuilt import ToolNode, tools_condition
 from langchain.globals import set_debug
+from lxml import etree
 import os
 
 load_dotenv()
@@ -24,13 +25,15 @@ def get_current_date() -> str:
     return datetime.now().strftime("%Y-%m-%d")
 
 # Setup LLM
-llm = GigaChat(
-    credentials=os.getenv("GIGACHAT_CREDENTIALS"),
-    verify_ssl_certs=False,
-    scope="GIGACHAT_API_PERS",
-    model="GigaChat-2",
-    temperature=0,
-)
+# llm = GigaChat(
+#     credentials=os.getenv("GIGACHAT_CREDENTIALS"),
+#     verify_ssl_certs=False,
+#     scope="GIGACHAT_API_PERS",
+#     model="GigaChat-Pro",
+#     temperature=0,
+# )
+
+llm = ChatOllama(model="gpt-oss:120b-cloud", temperature=0)
 
 # Setup tools
 tools = [get_current_date]
@@ -59,10 +62,59 @@ graph_builder.add_edge(START, "chatbot")
 # Compile the graph
 graph = graph_builder.compile()
 
-print(graph.get_graph().draw_ascii())
+# Print the graph in ASCII (optional)
+# print(graph.get_graph().draw_ascii())
+
+# Prepare data
+xml_file = "test-events.xml"
+tree = etree.parse(xml_file)
+xml_text = etree.tostring(tree, pretty_print=True, encoding="unicode")
+
+# Prepare prompts and initial state
+system_prompt = """
+Ты эксперт в анализе XML документов.
+"""
+
+days = 7
+
+user_prompt = f"""
+Проанализируй XML документ:\n\n{xml_text}\n\n.
+
+В нем описаны события. 
+Каждое событие представлено в виде элемента <event>.
+Элемент <event> содержит следующие атрибуты:
+- name - название события
+- date - дата события
+- person - имя или название группы
+
+При анализе даты события учитывай только месяц и день, не учитывай год.
+
+Выведи список событий на предстоящие {days} дней.
+Не выводи события, выходящие за пределы предстоящих {days} дней.
+
+Событие должно быть строго в формате: <дата> # <имя> # <название>
+
+Примеры:
+5 октября # Anna White # Birthday
+12 октября # City Residents # Festival
+
+Дата должна быть в формате "день месяца", например "12 октября" или "22 ноября".
+
+Отсортируй события по дате (сначала ближайшие).
+
+Не выводи других комментариев, кроме списка событий.
+
+Если событий нет, то не выводи ничего (верни пустую строку).
+"""
+
+initial_state = {
+    "messages": [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+}
 
 # Run the agent
-user_input = "What is the exact current date?"
-response = graph.invoke({"messages": [{"role": "user", "content": user_input}]})
+response = graph.invoke(initial_state)
 
-print("Agent response:", response["messages"][-1].content)
+print(response["messages"][-1].content)

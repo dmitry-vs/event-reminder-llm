@@ -9,5 +9,7 @@ dependencies = [
     "grandalf>=0.8",
     "langchain>=0.3.27",
     "langchain-gigachat>=0.3.12",
+    "langchain-ollama>=0.3.9",
     "langgraph>=0.6.8",
+    "lxml>=6.0.2",
 ]
